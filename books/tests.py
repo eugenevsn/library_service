@@ -44,3 +44,45 @@ class BookModelTests(TestCase):
         book["inventory"] = -1
         res = self.client.post(book_list_url(), data=book)
         self.assertEqual(status.HTTP_400_BAD_REQUEST, res.status_code)
+
+
+class BookViewUnauthorizedTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+    def test_access_to_book_list(self):
+        res = self.client.get(book_list_url())
+        self.assertEqual(status.HTTP_200_OK, res.status_code)
+
+    def test_post_book(self):
+        book = sample_book()
+        res = self.client.post(book_list_url(), data=book)
+        self.assertEqual(status.HTTP_401_UNAUTHORIZED, res.status_code)
+
+
+class BookViewAuthorizedTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            "user@mail.com", "password"
+        )
+        self.client.force_authenticate(self.user)
+
+    def test_post_book(self):
+        book = sample_book()
+        res = self.client.post(book_list_url(), data=book)
+        self.assertEqual(status.HTTP_403_FORBIDDEN, res.status_code)
+
+
+class BookViewAdminTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_superuser(
+            "admin@mail.com", "password"
+        )
+        self.client.force_authenticate(self.user)
+
+    def test_post_book(self):
+        book = sample_book()
+        res = self.client.post(book_list_url(), data=book)
+        self.assertEqual(status.HTTP_201_CREATED, res.status_code)
