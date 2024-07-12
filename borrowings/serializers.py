@@ -61,3 +61,18 @@ class BorrowingCreateSerializer(BorrowingSerializer):
         model = Borrowing
         fields = ("id", "borrow_date", "expected_return_date",
                   "actual_return_date", "book")
+
+
+class BorrowingReturnSerializer(BorrowingSerializer):
+    def validate(self, attrs):
+        data = super(BorrowingSerializer, self).validate(attrs=attrs)
+        Borrowing.validate_dates(
+            self.instance.borrow_date,
+            data["actual_return_date"],
+            ValidationError
+        )
+        return data
+
+    class Meta:
+        model = Borrowing
+        fields = ("id", "actual_return_date")
