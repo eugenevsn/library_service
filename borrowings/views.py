@@ -1,3 +1,5 @@
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -35,7 +37,7 @@ class BorrowingViewSet(viewsets.ModelViewSet):
     def _params_to_ints(qs):
         """Converts a list of string IDs to a list of integers"""
         return [int(str_id) for str_id in qs.split(",")]
-    
+
     def get_queryset(self):
         queryset = Borrowing.objects.select_related("book", "user")
         if not self.request.user.is_staff:
@@ -54,6 +56,23 @@ class BorrowingViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(user_id__in=user_id)
 
         return queryset
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "is_active",
+                type=OpenApiTypes.BOOL,
+                description="Filter by active borrowings (ex. ?is_active=True)",
+            ),
+            OpenApiParameter(
+                "user_id",
+                type={"type": "list", "items": {"type": "number"}},
+                description="Filter by user id, only for admins (ex. ?user_id=2,5)",
+            ),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
