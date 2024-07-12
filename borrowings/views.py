@@ -24,5 +24,10 @@ class BorrowingViewSet(viewsets.ReadOnlyModelViewSet):
             return BorrowingCreateSerializer
         return self.serializer_class
 
+    @staticmethod
+    def _params_to_ints(qs):
+        """Converts a list of string IDs to a list of integers"""
+        return [int(str_id) for str_id in qs.split(",")]
+
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
