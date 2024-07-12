@@ -1,12 +1,17 @@
-from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.response import Response
+from django.db import transaction
 
 from borrowings.models import Borrowing
 from borrowings.serializers import (
     BorrowingSerializer,
     BorrowingListSerializer,
     BorrowingDetailSerializer,
-    BorrowingCreateSerializer
+    BorrowingCreateSerializer,
+    BorrowingReturnSerializer
 )
 
 
@@ -22,6 +27,8 @@ class BorrowingViewSet(viewsets.ModelViewSet):
             return BorrowingDetailSerializer
         if self.action == "create":
             return BorrowingCreateSerializer
+        if self.action == "return_borrowing":
+            return BorrowingReturnSerializer
         return self.serializer_class
 
     @staticmethod
@@ -50,3 +57,26 @@ class BorrowingViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @action(
+        methods=["POST"],
+        detail=True,
+        url_path="return",
+        permission_classes=(IsAdminUser,),
+    )
+    def return_borrowing(self, request, pk):
+        """Return borrowing endpoint"""
+        with transaction.atomic():
+            borrowing = self.get_object()
+            if borrowing.actual_return_date:
+                raise ValidationError(
+                    "Borrowing was already returned"
+                )
+            book = borrowing.book
+            book.inventory += 1
+            book.save()
+
+            serializer = self.get_serializer(borrowing, data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
