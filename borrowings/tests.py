@@ -120,13 +120,13 @@ class BorrowingAuthorizedFilteringViewSetTests(TestCase):
 
         book_data = sample_book()
         book_data["inventory"] = 3
-        book_data["title"] = "Test"
+        book_data["title"] = "test"
         book = BookSerializer(data=book_data)
         book.is_valid()
         book.save()
 
         borrowings = sample_borrowing()
-        borrowings["book"] = Book.objects.get(title="Test")
+        borrowings["book"] = Book.objects.get(title="test")
         borrowings["user"] = self.user
         borrowings["actual_return_date"] = str(
             timezone.now().date() + timezone.timedelta(days=5)
@@ -159,3 +159,61 @@ class BorrowingAuthorizedFilteringViewSetTests(TestCase):
         self.client.force_authenticate(self.other_user)
         res = self.client.get(get_borrowing_list_url() + "?user_id=1")
         self.assertEqual(1, len(res.data))
+
+
+class BorrowingReturnTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_superuser(
+            "user@test.com", "password"
+        )
+        self.client.force_authenticate(self.user)
+
+        book_data = sample_book()
+        book_data["inventory"] = 2
+        book = BookSerializer(data=book_data)
+        book.is_valid()
+        book.save()
+
+        borrowings = sample_borrowing()
+        borrowings["book"] = Book.objects.get(title="test")
+        borrowings["user"] = self.user
+        borrowings.pop("actual_return_date")
+        Borrowing.objects.create(**borrowings)
+
+    def test_borrowing_return(self):
+        return_date = timezone.now().date() + timezone.timedelta(days=10)
+        res = self.client.post(
+            get_borrowing_return_url(1),
+            data={
+                "actual_return_date": return_date
+            }
+        )
+        self.assertEqual(status.HTTP_200_OK, res.status_code)
+        self.assertEqual(str(return_date), res.data["actual_return_date"])
+
+    def test_borrowing_return_twice(self):
+        return_date = timezone.now().date() + timezone.timedelta(days=10)
+        res = None
+        for _ in range(2):
+            res = self.client.post(
+                get_borrowing_return_url(1),
+                data={
+                    "actual_return_date": return_date
+                }
+            )
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, res.status_code)
+
+    def test_borrowing_return_not_admin(self):
+        other_user = get_user_model().objects.create_user(
+            "user2@test.com", "password"
+        )
+        self.client.force_authenticate(other_user)
+        return_date = timezone.now().date() + timezone.timedelta(days=10)
+        res = self.client.post(
+            get_borrowing_return_url(1),
+            data={
+                "actual_return_date": return_date
+            }
+        )
+        self.assertEqual(status.HTTP_403_FORBIDDEN, res.status_code)
