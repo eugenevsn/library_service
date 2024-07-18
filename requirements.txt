@@ -7,3 +7,4 @@ pyTelegramBotAPI==4.21.0
 celery==5.4.0
 redis==5.0.7
 psycopg2-binary==2.9.9
+stripe==10.3.0
