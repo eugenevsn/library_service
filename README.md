@@ -32,6 +32,8 @@ pip install -r requirements.txt
     `POSTGRES_PORT`<br>
     `CELERY_BROKER_URL`<br>
     `CELERY_RESULT_BACKEND`<br>
+    `STRIPE_PUBLIC_KEY`<br>
+    `STRIPE_SECRET_KEY`<br>
 
 ### Run database migrations:
 ```bash
@@ -51,8 +53,9 @@ docker-compose up
 
 ## API endpoints
 * Book `api/library/books/`
-* Borrowing `api/library/borrowings/`
-* Return `borrowing api/library/borrowings/<int:id>/return/`
+* Borrowing `api/borrowings/`
+* Return borrowing `api/borrowings/<int:id>/return/`
+* Payments `api/payments/`
 
 User & tokens:
 
