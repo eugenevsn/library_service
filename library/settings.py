@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "books",
     "users",
     "borrowings",
+    "payments",
     "drf_spectacular",
 ]
 
@@ -156,3 +157,6 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
 CELERY_TASK_TIME_LIMIT = 60
+
+STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY")
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
